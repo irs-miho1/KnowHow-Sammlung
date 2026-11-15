@@ -1,0 +1,257 @@
+{
+ "variants": {
+  "V1": {
+   "name": "1 × GND am Rand, Takt am Gegenrand",
+   "h3": 0.5,
+   "h40": 0.5,
+   "dh3": 0.48,
+   "dh40": 0.48,
+   "L_loop_nH_25cm": 480.1,
+   "sep_mm": 24.13,
+   "xt40_mV": 1107.5,
+   "xt3_mV": 752.5
+  },
+  "V2": {
+   "name": "1 × GND am Rand, Takt daneben",
+   "h3": 0.5,
+   "h40": 0.5,
+   "dh3": 0.48,
+   "dh40": 0.48,
+   "L_loop_nH_25cm": 190.0,
+   "sep_mm": 1.27,
+   "xt40_mV": 818.0,
+   "xt3_mV": 641.1
+  },
+  "V3": {
+   "name": "3 × GND (Ränder + Mitte)",
+   "h3": 0.229,
+   "h40": 0.199,
+   "dh3": 0.209,
+   "dh40": 0.179,
+   "L_loop_nH_25cm": 225.1,
+   "sep_mm": 5.08,
+   "xt40_mV": 916.0,
+   "xt3_mV": 732.7
+  },
+  "V4": {
+   "name": "S-G-S-G (jede 2. Ader GND)",
+   "h3": 0.052,
+   "h40": 0.041,
+   "dh3": 0.032,
+   "dh40": 0.021,
+   "L_loop_nH_25cm": 118.2,
+   "sep_mm": 1.27,
+   "xt40_mV": 99.3,
+   "xt3_mV": 74.3
+  }
+ },
+ "z0": {
+  "Z0_3mm": 31.6,
+  "Z0_40mm": 134.2
+ },
+ "tf": {
+  "Frei im Raum, ohne Anbindung": {
+   "50MHz": 0.04375284759135853,
+   "150MHz": 0.04242221103348422,
+   "250MHz": 0.051335037921497836,
+   "450MHz": 0.08332523540507276
+  },
+  "Frei im Raum, mit Anbindung": {
+   "50MHz": 0.0006007909510060915,
+   "150MHz": 0.006344000143230577,
+   "250MHz": 0.025806538111650276,
+   "450MHz": 0.5327645147344894
+  },
+  "Auf Blech, ohne Anbindung": {
+   "50MHz": 0.142901217405346,
+   "150MHz": 0.15105047156173024,
+   "250MHz": 0.12476878357366762,
+   "450MHz": 0.22605097716483008
+  },
+  "Auf Blech, mit Anbindung": {
+   "50MHz": 0.0025592806111212197,
+   "150MHz": 0.028116820582346613,
+   "250MHz": 0.1324589709505662,
+   "450MHz": 0.48163811065347556
+  }
+ },
+ "emax": {
+  "V1|Frei im Raum, ohne Anbindung": {
+   "max_dB": 78.0,
+   "over_B": 48.0
+  },
+  "V1|Frei im Raum, mit Anbindung": {
+   "max_dB": 71.4,
+   "over_B": 34.4
+  },
+  "V1|Auf Blech, ohne Anbindung": {
+   "max_dB": 84.2,
+   "over_B": 54.2
+  },
+  "V1|Auf Blech, mit Anbindung": {
+   "max_dB": 86.1,
+   "over_B": 49.1
+  },
+  "V4|Frei im Raum, ohne Anbindung": {
+   "max_dB": 53.7,
+   "over_B": 23.7
+  },
+  "V4|Frei im Raum, mit Anbindung": {
+   "max_dB": 44.1,
+   "over_B": 7.1
+  },
+  "V4|Auf Blech, ohne Anbindung": {
+   "max_dB": 61.0,
+   "over_B": 31.0
+  },
+  "V4|Auf Blech, mit Anbindung": {
+   "max_dB": 62.6,
+   "over_B": 25.6
+  }
+ },
+ "kc": {
+  "V1": {
+   "m40_dB": 0.0,
+   "m3_dB": -30.8
+  },
+  "V3": {
+   "m40_dB": -16.5,
+   "m3_dB": -51.0
+  },
+  "V4": {
+   "m40_dB": -59.0,
+   "m3_dB": -84.3
+  }
+ },
+ "sens": {
+  "4nH": [
+   51.4,
+   59.1,
+   66.9,
+   86.1,
+   70.0
+  ],
+  "2nH": [
+   48.4,
+   53.8,
+   59.0,
+   65.3,
+   80.9
+  ],
+  "1nH": [
+   46.4,
+   49.8,
+   53.6,
+   57.7,
+   64.0
+  ],
+  "0.5nH": [
+   45.2,
+   47.0,
+   49.8,
+   52.9,
+   57.4
+  ]
+ },
+ "lid": {
+  "3mm": 0.0,
+  "40mm": 11.5,
+  "80mm": 26.7
+ },
+ "hinf": {
+  "V1": {
+   "flat": 0.0083,
+   "air": 0.0523,
+   "unbonded": 0.5
+  },
+  "V4": {
+   "flat": 0.0025,
+   "air": 0.0058,
+   "unbonded": 0.04
+  }
+ },
+ "pb": {
+  "Platinenpotential → externes Kabel": 12.9,
+  "Feldkopplung auf interne Verdrahtung": -3.2,
+  "Gerät gegen Umgebung (h∞-Sprung)": -18.1,
+  "Deckelöffnung (Schleifenformel)": -11.5,
+  "Nachbarkabel in gleicher Höhe": -30.8
+ },
+ "kl": {
+  "Frei im Raum, ohne Anbindung": {
+   "k001": 63.2,
+   "k01": 68.5,
+   "k1": 83.4
+  },
+  "Frei im Raum, mit Anbindung": {
+   "k001": 51.4,
+   "k01": 53.9,
+   "k1": 64.7
+  },
+  "Auf Blech, ohne Anbindung": {
+   "k001": 72.7,
+   "k01": 74.8,
+   "k1": 84.9
+  },
+  "Auf Blech, mit Anbindung": {
+   "k001": 59.0,
+   "k01": 59.1,
+   "k1": 60.5
+  },
+  "Auf Blech, Anbindung 1 nH": {
+   "k001": 49.4,
+   "k01": 49.8,
+   "k1": 53.3
+  }
+ },
+ "emax_full": {
+  "V1|Frei im Raum, ohne Anbindung": [
+   78.0,
+   68.5,
+   64.8,
+   62.5
+  ],
+  "V1|Frei im Raum, mit Anbindung": [
+   55.9,
+   53.9,
+   57.0,
+   64.0
+  ],
+  "V1|Auf Blech, ohne Anbindung": [
+   84.2,
+   74.8,
+   68.8,
+   67.5
+  ],
+  "V1|Auf Blech, mit Anbindung": [
+   51.4,
+   59.1,
+   66.9,
+   86.1
+  ],
+  "V4|Frei im Raum, ohne Anbindung": [
+   53.7,
+   44.1,
+   40.0,
+   37.4
+  ],
+  "V4|Frei im Raum, mit Anbindung": [
+   32.2,
+   28.2,
+   30.4,
+   36.9
+  ],
+  "V4|Auf Blech, ohne Anbindung": [
+   61.0,
+   51.7,
+   45.7,
+   44.3
+  ],
+  "V4|Auf Blech, mit Anbindung": [
+   28.0,
+   35.7,
+   43.4,
+   62.6
+  ]
+ }
+}
