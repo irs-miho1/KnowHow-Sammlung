@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Innenleben 3D: Kabelführung gut vs. schlecht</title>
+<style>
+  :root { --bad:#d64545; --good:#2f9e5a; --ink:#1d1f22; --quiet:#5d636b; --bg:#f6f5f2; --card:#fff; --line:#e2e0da; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color:var(--ink); background:var(--bg); }
+  header { padding:18px 18px 8px; max-width:1100px; margin:0 auto; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--quiet); font-size:13.5px; line-height:1.4; margin:0; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:10px 18px; max-width:1100px; margin:0 auto; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--card); }
+  .seg button { border:0; background:transparent; padding:9px 14px; font-size:14px; font-weight:600; cursor:pointer; color:var(--quiet); }
+  .seg button.on.bad { background:var(--bad); color:#fff; }
+  .seg button.on.good { background:var(--good); color:#fff; }
+  label.chk { font-size:13.5px; color:var(--quiet); display:inline-flex; align-items:center; gap:6px; margin-left:6px; }
+  .stage { position:relative; max-width:1100px; margin:0 auto; height:62vh; min-height:360px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); background:radial-gradient(ellipse at 50% 40%, #fdfdfb, #e9e7e1); overflow:hidden; }
+  canvas { display:block; width:100%; height:100%; touch-action:none; cursor:grab; }
+  .tag { position:absolute; transform:translate(-50%,-50%); width:26px; height:26px; border-radius:50%; color:#fff; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.35); pointer-events:auto; cursor:pointer; border:2px solid #fff; }
+  .tag.bad { background:var(--bad); } .tag.good { background:var(--good); }
+  .tag.vent { background:#555; width:auto; height:auto; padding:3px 8px; border-radius:6px; font-size:11.5px; font-weight:600; }
+  .tag.hi { outline:3px solid #ffd54a; }
+  .hint { position:absolute; left:12px; bottom:10px; font-size:12px; color:var(--quiet); background:rgba(255,255,255,.8); padding:4px 8px; border-radius:6px; pointer-events:none; }
+  .legend { position:absolute; right:10px; top:10px; font-size:11.5px; color:var(--quiet); background:rgba(255,255,255,.85); padding:6px 9px; border-radius:8px; line-height:1.6; pointer-events:none; }
+  .sw { display:inline-block; width:12px; height:8px; border-radius:2px; margin-right:5px; vertical-align:middle; }
+  main { max-width:1100px; margin:0 auto; padding:14px 18px 40px; }
+  .points { display:grid; grid-template-columns:repeat(auto-fill, minmax(300px,1fr)); gap:10px; }
+  .pt { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 13px; display:flex; gap:10px; cursor:pointer; }
+  .pt.hi { border-color:#e0b400; box-shadow:0 0 0 2px #ffe58a; }
+  .num { flex:0 0 26px; height:26px; border-radius:50%; color:#fff; font-weight:700; font-size:13px; display:flex; align-items:center; justify-content:center; }
+  .num.bad { background:var(--bad); } .num.good { background:var(--good); }
+  .pt h3 { margin:2px 0 4px; font-size:14.5px; }
+  .pt p { margin:0; font-size:13px; color:var(--quiet); line-height:1.45; }
+  .pt .phys { margin-top:5px; font-size:12.5px; color:var(--ink); }
+  .note { font-size:12px; color:var(--quiet); margin-top:14px; }
+  #err { display:none; padding:20px; color:var(--bad); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Innenleben eines Laser-/TEC-Controllers – Kabelführung</h1>
+  <p class="sub">Hypothetischer Aufbau: Netzteil, Hauptplatine, Treiberplatine, Frontplatine mit Display. Seitenwände und Deckel sind ausgeblendet. Schalte zwischen schlechter und guter Praxis um und tippe auf eine Nummer.</p>
+</header>
+<div class="bar">
+  <div class="seg">
+    <button id="bBad" class="bad on">Schlechte Praxis</button>
+    <button id="bGood" class="good">Gute Praxis</button>
+  </div>
+  <label class="chk"><input type="checkbox" id="lid"> Deckel und Seiten zeigen</label>
+</div>
+<div class="stage" id="stage">
+  <canvas id="c"></canvas>
+  <div class="legend">
+    <div><span class="sw" style="background:#9aa0a6"></span>Flachbandkabel</div>
+    <div><span class="sw" style="background:#c98a3c"></span>Display-FFC</div>
+    <div><span class="sw" style="background:#2b2b2b"></span>Netzkabel</div>
+    <div><span class="sw" style="background:#3a6fb0"></span>Ausgangskabel LD/TEC</div>
+    <div><span class="sw" style="background:#2f9e5a"></span>Chassisbolzen am Stecker</div>
+  </div>
+  <div class="hint">Ziehen: drehen · Zwei Finger / Mausrad: zoomen</div>
+  <div id="err">3D-Bibliothek konnte nicht geladen werden.</div>
+</div>
+<main>
+  <div class="points" id="points"></div>
+  <p class="note">Schematische Darstellung, nicht maßstäblich und nicht das reale Thorlabs-Gerät. Grundlage: Imbalance-Difference-Modell, V_CM = Δh · V_DM.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+if (!window.THREE) { document.getElementById('err').style.display='block'; return; }
+
+const POINTS = {
+  bad: [
+    {n:1, pos:[-5,8.6,0], t:'Flachband hochgebogen', d:'Bogen 7 cm über dem Boden, direkt unter der Lüftung und über dem Netzteil.', p:'h ≈ 0,4 → großes Δh am Stecker; große Schleife; speist die Öffnung; fängt Netzteil-Magnetfeld.'},
+    {n:2, pos:[8.5,7,-2.2], t:'Überlänge als Schlaufe', d:'Kurze Verbindung Haupt- zu Treiberplatine mit zu langem Kabel, als Schlaufe hochstehend.', p:'Zusätzliche Antennenlänge, Resonanz rückt in den Messbereich.'},
+    {n:3, pos:[-6,3,8.5], t:'Netzkabel quer durchs Gerät', d:'Netzzuleitung läuft innen nach vorn, parallel zum Flachband, und wieder zurück zum Netzteil.', p:'Koppelt Gleichtakt hinter dem Netzfilter ein → leitungsgebundene Störung.'},
+    {n:4, pos:[9.2,3.4,-8], t:'Ausgangskabel mit Flachband gebündelt', d:'LD/TEC-Leitung zur Rückwand quer über die Hauptplatine, dicht an der Schlaufe.', p:'Externes Kabel wird zur Antenne: wenige µA reichen für Grenzwertverletzung.'},
+    {n:5, pos:[-2.5,1.4,-3.5], t:'Chassisbolzen nur an den Ecken', d:'Platinenmasse weit vom Stecker mit dem Gehäuse verbunden.', p:'V_CM wird nicht am Entstehungsort kurzgeschlossen; Rückstrom-Umweg über die Platine.'},
+    {n:6, pos:[-6,4.4,13.95], t:'Display-FFC frei, Rahmen floatend', d:'FFC als Schlaufe vor dem Fenster, Metallrahmen ohne Verbindung zum Chassis.', p:'Display-Takt strahlt durch die größte Öffnung im Gehäuse.'}
+  ],
+  good: [
+    {n:1, pos:[1.5,0.4,5], t:'Flachband flach auf dem Bodenblech', d:'Vom Stecker direkt nach unten, < 5 mm über dem Blech zur Front, fixiert mit Klebepads.', p:'h ≈ 0,15, kleine Schleife; Abstand zu Lüftung und Netzteil.'},
+    {n:2, pos:[8.5,0.6,-1.6], t:'Kurz, flach gefaltet', d:'Passende Länge, Richtungswechsel als flache Faltung statt Schlaufe.', p:'Minimale Antennenlänge.'},
+    {n:3, pos:[-15.4,1.4,-6], t:'Netzkabel kurz an der Seitenwand', d:'Vom Netzeingang auf kürzestem Weg zum Netzteil, Filter direkt am Eingang.', p:'Keine Kopplung in die Signalkabel, Filter bleibt wirksam.'},
+    {n:4, pos:[15.4,0.8,-6], t:'Ausgangskabel getrennt geführt', d:'Entlang der rechten Wand, eigener Weg, Schirm 360° an der Rückwand aufgelegt.', p:'Keine Nahfeldkopplung vom Flachband auf das externe Kabel.'},
+    {n:5, pos:[3,1.4,-4.6], t:'Chassisbolzen neben jedem Stecker', d:'Metallbolzen mit Durchkontaktierung direkt an jedem Flachband-Stecker, auf beiden Platinen.', p:'Schließt V_CM = Δh · V_DM am Ort der Entstehung kurz.'},
+    {n:6, pos:[-6,2.4,13.1], t:'Display-Rahmen geerdet, FFC flach', d:'Rahmen mit zwei Massebändern am Frontblech, FFC flach am Rahmen.', p:'Fenster bleibt „dunkel“; Display-Takt mit Serienwiderständen entschärfen.'}
+  ]
+};
+
+const canvas = document.getElementById('c');
+const stage = document.getElementById('stage');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(38, 1, 0.5, 400);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8a80, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.7); sun.position.set(20,40,30); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xffffff, 0.25); fill.position.set(-30,20,-20); scene.add(fill);
+
+const V = (a)=>new THREE.Vector3(a[0],a[1],a[2]);
+const mat = (c, o={}) => new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:0.6, metalness:0.1}, o));
+function box(w,h,d, x,y,z, m, parent){ const g=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), m); g.position.set(x,y,z); (parent||common).add(g); return g; }
+function cyl(r,h, x,y,z, m, parent, axis){ const g=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,14), m); g.position.set(x,y,z); if(axis==='z') g.rotation.x=Math.PI/2; (parent||common).add(g); return g; }
+
+const common = new THREE.Group(), gBad = new THREE.Group(), gGood = new THREE.Group(), shell = new THREE.Group();
+scene.add(common, gBad, gGood, shell);
+
+// --- Gehäuse: 32 x 10 x 28 (x, y, z), Front bei z = +14
+const metal = mat(0xb8bcc2, {metalness:0.55, roughness:0.45});
+box(32,0.2,28, 0,-0.1,0, metal);
+// Rückwand halbtransparent
+const backMat = mat(0xa9adb3, {transparent:true, opacity:0.55, metalness:0.4});
+box(32,10,0.2, 0,5,-14.1, backMat);
+// Frontblech mit Fenster
+const fs = new THREE.Shape(); fs.moveTo(-16,0); fs.lineTo(16,0); fs.lineTo(16,10); fs.lineTo(-16,10); fs.lineTo(-16,0);
+const hole = new THREE.Path(); hole.moveTo(-12,3); hole.lineTo(0,3); hole.lineTo(0,8); hole.lineTo(-12,8); hole.lineTo(-12,3); fs.holes.push(hole);
+const frontMat = mat(0x8f949b, {transparent:true, opacity:0.22, side:THREE.DoubleSide, metalness:0.4});
+const front = new THREE.Mesh(new THREE.ShapeGeometry(fs), frontMat); front.position.z = 14.05; common.add(front);
+// Kanten des Gehäuses
+const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(32,10,28)), new THREE.LineBasicMaterial({color:0x7d8188}));
+edges.position.set(0,5,0); common.add(edges);
+const winEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(12,5)), new THREE.LineBasicMaterial({color:0x50555c}));
+winEdge.position.set(-6,5.5,14.06); common.add(winEdge);
+// Deckel + Seiten (umschaltbar)
+const shellMat = mat(0xb8bcc2, {transparent:true, opacity:0.5, metalness:0.5, side:THREE.DoubleSide});
+box(32,0.2,28, 0,10.1,0, shellMat, shell);
+box(0.2,10,28, -16.1,5,0, shellMat, shell);
+box(0.2,10,28, 16.1,5,0, shellMat, shell);
+shell.visible = false;
+// Lüftungsschlitze im Deckel (immer sichtbar)
+const ventMat = new THREE.MeshBasicMaterial({color:0x333333, transparent:true, opacity:0.55, side:THREE.DoubleSide});
+for (let i=0;i<7;i++){ const s=new THREE.Mesh(new THREE.PlaneGeometry(0.5,7), ventMat); s.rotation.x=-Math.PI/2; s.position.set(-8+i*1.1, 10.02, 0.5); common.add(s); }
+
+// Rückwand-Buchsen
+box(2.6,2,0.8, -12,4,-13.6, mat(0x222222));         // Netz
+box(1.4,0.8,0.8, -2,3,-13.6, mat(0x3a3a3a));        // USB
+box(3.2,1.4,0.8, 12,3.5,-13.6, mat(0x555a60,{metalness:0.6})); // LD/TEC
+
+// --- Platinen
+const pcb = mat(0x2f6b45, {roughness:0.7});
+const BY = 1.2;
+function board(x0,x1,z0,z1, corners){
+  box(x1-x0,0.16,z1-z0, (x0+x1)/2, BY, (z0+z1)/2, pcb);
+  corners.forEach(c=>cyl(0.28,BY, c[0],BY/2,c[1], mat(0xd0c7a0,{metalness:0.6})));
+}
+board(-15,-5,-13,-1, [[-14.5,-12.5],[-5.5,-12.5],[-14.5,-1.5],[-5.5,-1.5]]); // Netzteil
+board(-3,15,-13,-3, [[-2.5,-12.5],[14.5,-12.5],[-2.5,-3.5],[14.5,-3.5]]);   // Hauptplatine
+board(3,15,0,10, [[3.5,0.5],[14.5,0.5],[3.5,9.5],[14.5,9.5]]);              // Treiber
+// Frontplatine senkrecht
+box(24,8.2,0.16, -2,4.9,12.6, pcb);
+[[-13.5,1.4],[9.5,1.4],[-13.5,8.4],[9.5,8.4]].forEach(c=>cyl(0.28,1.4, c[0],c[1],13.35, mat(0xd0c7a0,{metalness:0.6}), common, 'z'));
+// Display-Modul
+box(13,6,0.6, -6,5.5,13.35, mat(0x6d7178,{metalness:0.7, roughness:0.35}));
+const lcd = new THREE.Mesh(new THREE.PlaneGeometry(11.6,4.8), new THREE.MeshStandardMaterial({color:0x1d3550, emissive:0x2a5d8f, emissiveIntensity:0.5}));
+lcd.position.set(-6,5.5,13.66); common.add(lcd);
+
+// Bauteile
+box(4,3.4,4, -10,BY+1.8,-7, mat(0xc8a64a));            // Trafo/Drossel
+box(1.2,3,4, -7,BY+1.6,-3.6, mat(0x999da3,{metalness:0.8}));  // Kühlkörper
+box(2.6,0.4,2.6, 5,BY+0.3,-8, mat(0x1b1b1b));          // MCU
+box(3.2,0.4,3.2, 10.5,BY+0.3,-9, mat(0x1b1b1b));       // FPGA
+box(5,2.2,3, 10,BY+1.2,6, mat(0x999da3,{metalness:0.8}));     // Treiber-Kühlkörper
+box(1.6,0.4,1.6, 6,BY+0.3,3.5, mat(0x1b1b1b));
+// Stecker (Flachband-Wannen)
+const hdr = mat(0x222222);
+box(3,0.7,0.8, 1.5,BY+0.4,-3.6, hdr);   // Haupt → Front
+box(3,0.7,0.8, 8.5,BY+0.4,-3.6, hdr);   // Haupt → Treiber
+box(3,0.7,0.8, 8.5,BY+0.4,0.6, hdr);    // Treiber
+box(3,0.8,0.7, 1.5,2,12.15, hdr);       // Front
+box(1.2,0.5,0.6, 13.5,BY+0.3,1, hdr);   // Treiber-Ausgang
+box(1.2,0.5,0.6, -13.5,BY+0.3,-1.5, hdr); // Netzteil-Eingang
+box(3,0.6,0.3, -6,1.4,12.85, hdr);      // FFC-Stecker auf Display-Seite der Frontplatine
+box(1,0.4,0.8, -1,BY+0.3,-12.5, hdr);   // USB innen
+
+// --- Kabelgeometrie
+function stripeTex(base){
+  const c=document.createElement('canvas'); c.width=64; c.height=4; const x=c.getContext('2d');
+  for(let i=0;i<16;i++){ x.fillStyle = i===0 ? '#c0392b' : (i%2? base : '#b9bdc2'); x.fillRect(i*4,0,4,4); }
+  const t=new THREE.CanvasTexture(c); t.wrapT=THREE.RepeatWrapping; return t;
+}
+const ribbonMat = new THREE.MeshStandardMaterial({map:stripeTex('#8e9399'), side:THREE.DoubleSide, roughness:0.8});
+const ffcMat = new THREE.MeshStandardMaterial({color:0xc98a3c, side:THREE.DoubleSide, roughness:0.5, metalness:0.2});
+// Polylinie mit gerundeten Ecken: kein Überschwingen, Kabel bleibt über dem Boden
+const FLOOR_MIN = 0.3;
+function smoothPath(pts, r){
+  const P = pts.map(V), out=[];
+  const seg=(a,b)=>{ const L=a.distanceTo(b), k=Math.max(1,Math.ceil(L/0.25)); for(let j=0;j<k;j++) out.push(a.clone().lerp(b,j/k)); };
+  let start = P[0];
+  for(let i=1;i<P.length-1;i++){
+    const A=P[i-1], B=P[i], C=P[i+1];
+    const ra=Math.min(r, A.distanceTo(B)/2), rc=Math.min(r, B.distanceTo(C)/2);
+    const p1=B.clone().add(A.clone().sub(B).normalize().multiplyScalar(ra));
+    const p2=B.clone().add(C.clone().sub(B).normalize().multiplyScalar(rc));
+    seg(start,p1);
+    for(let j=0;j<12;j++){ const t=j/12, u=1-t;
+      out.push(new THREE.Vector3(u*u*p1.x+2*u*t*B.x+t*t*p2.x, u*u*p1.y+2*u*t*B.y+t*t*p2.y, u*u*p1.z+2*u*t*B.z+t*t*p2.z)); }
+    start=p2;
+  }
+  seg(start, P[P.length-1]); out.push(P[P.length-1].clone());
+  out.forEach(p=>{ p.y=Math.max(p.y, FLOOR_MIN); });
+  return out;
+}
+function ribbon(pts, width, side, m, parent, r){
+  const P=smoothPath(pts, r||0.6), n=P.length-1, s=V(side).normalize().multiplyScalar(width/2);
+  const pos=[], uv=[], idx=[]; let len=0;
+  for(let i=0;i<=n;i++){ const p=P[i]; if(i) len+=p.distanceTo(P[i-1]); pos.push(p.x-s.x,p.y-s.y,p.z-s.z, p.x+s.x,p.y+s.y,p.z+s.z); uv.push(0,len/2, 1,len/2);
+    if(i<n){ const a=2*i; idx.push(a,a+1,a+2, a+1,a+3,a+2); } }
+  const g=new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv,2)); g.setIndex(idx); g.computeVertexNormals();
+  const mesh=new THREE.Mesh(g,m); parent.add(mesh); return mesh;
+}
+function tube(pts, r, color, parent, rr){
+  const curve = new THREE.CatmullRomCurve3(smoothPath(pts, rr||0.8), false, 'centripetal');
+  parent.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 160, r, 10, false), mat(color,{roughness:0.5})));
+}
+// USB (gleich in beiden)
+tube([[-1,1.6,-12.5],[-1.5,2.4,-13.1],[-2,3,-13.4]], 0.22, 0x555555, common);
+
+// --- Schlechte Praxis
+ribbon([[1.5,1.75,-3.6],[0.5,5,-4.2],[-5,8.6,-2],[-6,8.6,2],[-3,7.5,8],[0,4,11.6],[1.5,2.4,12.1]], 3, [1,0,0], ribbonMat, gBad, 2.5);
+ribbon([[8.5,1.75,-3.6],[8.5,4.5,-4.6],[8.5,7.2,-2.2],[8.5,6.2,1.4],[8.5,3.6,1.6],[8.5,1.75,0.6]], 3, [1,0,0], ribbonMat, gBad, 1.6);
+ribbon([[-6,1.6,12.95],[-6,1.6,13.85],[-6,4.2,13.9],[-6,2.3,13.9],[-6,2.3,13.35]], 2.6, [1,0,0], ffcMat, gBad, 0.8);
+tube([[-12,4,-13.2],[-10,5.6,-7],[-4,3,8],[-2,3,11.5],[-8,2.6,9],[-14,2,2],[-13.5,1.6,-1.5]], 0.35, 0x2b2b2b, gBad, 2.5);
+tube([[13.5,1.6,1],[9.6,3,0.2],[9.2,4.4,-3],[9.2,3.2,-8],[11,3,-12],[12,3.5,-13.2]], 0.3, 0x3a6fb0, gBad, 2);
+
+// --- Gute Praxis (flach knapp über dem Bodenblech, sichtbar)
+ribbon([[1.5,1.75,-3.6],[1.5,1.75,-2.6],[1.5,0.4,-2.2],[1.5,0.4,11.2],[1.5,1.75,11.8],[1.5,2.0,12.0]], 3, [1,0,0], ribbonMat, gGood, 0.4);
+ribbon([[8.5,1.75,-3.6],[8.5,1.75,-2.8],[8.5,0.45,-2.2],[8.5,0.45,-0.5],[8.5,1.8,-0.5],[8.5,1.8,0.6]], 3, [1,0,0], ribbonMat, gGood, 0.3);
+ribbon([[-6,1.6,12.95],[-6,2.4,12.95],[-6,2.4,13.35]], 2.6, [1,0,0], ffcMat, gGood, 0.2);
+tube([[-12,4,-13.2],[-15.4,3,-12.5],[-15.4,0.9,-10],[-15.4,0.9,-0.5],[-13.5,1.8,-0.5],[-13.5,1.8,-1.4]], 0.35, 0x2b2b2b, gGood, 0.6);
+tube([[13.5,1.8,1],[13.5,1.9,-0.5],[15.4,0.6,-0.5],[15.4,0.6,-13.4],[12,3.5,-13.4],[12,3.5,-13.2]], 0.3, 0x3a6fb0, gGood, 0.6);
+// Schirmschelle an Rückwand
+const clamp = new THREE.Mesh(new THREE.TorusGeometry(0.55,0.15,8,20), mat(0x2f9e5a,{metalness:0.6})); clamp.position.set(12.4,3.3,-13.0); gGood.add(clamp);
+// Chassisbolzen direkt am Stecker
+const boltMat = mat(0x2f9e5a, {metalness:0.5, emissive:0x1a5c34, emissiveIntensity:0.35});
+[[3.4,-4.4],[6.6,-4.4],[10.4,-4.4],[10.4,1.5]].forEach(c=>cyl(0.32,BY, c[0],BY/2,c[1], boltMat, gGood));
+cyl(0.32,1.4, 3.4,2,13.35, boltMat, gGood, 'z');
+// Massebänder Display-Rahmen → Frontblech
+box(0.5,0.5,0.6, -12.6,2.8,13.75, boltMat, gGood);
+box(0.5,0.5,0.6, 0.6,8.2,13.75, boltMat, gGood);
+
+// --- Marker
+const tagLayer = stage; let tags=[];
+const pointsEl = document.getElementById('points');
+let mode='bad';
+function buildTags(){
+  tags.forEach(t=>t.el.remove()); tags=[];
+  const vent = document.createElement('div'); vent.className='tag vent'; vent.textContent='Lüftung'; tagLayer.appendChild(vent);
+  tags.push({el:vent, p:V([-4.7,10.4,0.5])});
+  pointsEl.innerHTML='';
+  POINTS[mode].forEach(pt=>{
+    const el=document.createElement('div'); el.className='tag '+mode; el.textContent=pt.n; tagLayer.appendChild(el);
+    const card=document.createElement('div'); card.className='pt';
+    card.innerHTML='<div class="num '+mode+'">'+pt.n+'</div><div><h3>'+pt.t+'</h3><p>'+pt.d+'</p><p class="phys">'+pt.p+'</p></div>';
+    pointsEl.appendChild(card);
+    const hi=()=>{ document.querySelectorAll('.hi').forEach(e=>e.classList.remove('hi')); el.classList.add('hi'); card.classList.add('hi'); };
+    el.addEventListener('click', ()=>{ hi(); card.scrollIntoView({behavior:'smooth', block:'nearest'}); });
+    card.addEventListener('click', ()=>{ hi(); stage.scrollIntoView({behavior:'smooth', block:'nearest'}); });
+    tags.push({el, p:V(pt.pos)});
+  });
+}
+function setMode(m){ mode=m; gBad.visible=(m==='bad'); gGood.visible=(m==='good');
+  document.getElementById('bBad').classList.toggle('on', m==='bad'); document.getElementById('bGood').classList.toggle('on', m==='good'); buildTags(); }
+document.getElementById('bBad').onclick=()=>setMode('bad');
+document.getElementById('bGood').onclick=()=>setMode('good');
+document.getElementById('lid').onchange=(e)=>{ shell.visible=e.target.checked; };
+
+// --- Orbit-Steuerung
+const target = new THREE.Vector3(0,3.5,0);
+let theta=-0.65, phi=0.95, radius=58;
+function place(){ phi=Math.max(0.15, Math.min(1.5, phi)); radius=Math.max(22, Math.min(110, radius));
+  camera.position.set(target.x+radius*Math.sin(phi)*Math.sin(theta), target.y+radius*Math.cos(phi), target.z+radius*Math.sin(phi)*Math.cos(theta)); camera.lookAt(target); }
+const ptrs=new Map(); let lastDist=0;
+canvas.addEventListener('pointerdown', e=>{ canvas.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); canvas.style.cursor='grabbing'; });
+canvas.addEventListener('pointermove', e=>{
+  if(!ptrs.has(e.pointerId)) return;
+  const prev=ptrs.get(e.pointerId); const cur={x:e.clientX,y:e.clientY}; ptrs.set(e.pointerId,cur);
+  if(ptrs.size===1){ theta-=(cur.x-prev.x)*0.008; phi-=(cur.y-prev.y)*0.008; }
+  else if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; const d=Math.hypot(a.x-b.x,a.y-b.y); if(lastDist) radius*=lastDist/d; lastDist=d; }
+  place(); render();
+});
+const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) lastDist=0; canvas.style.cursor='grab'; };
+canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+canvas.addEventListener('wheel', e=>{ e.preventDefault(); radius*=Math.exp(e.deltaY*0.001); place(); render(); }, {passive:false});
+
+function resize(){ const w=stage.clientWidth, h=stage.clientHeight; renderer.setSize(w,h,false); camera.aspect=w/h;
+  camera.fov = w < 600 ? 50 : 38; camera.updateProjectionMatrix(); render(); }
+const tmp=new THREE.Vector3();
+function render(){
+  renderer.render(scene,camera);
+  const w=stage.clientWidth, h=stage.clientHeight;
+  tags.forEach(t=>{ tmp.copy(t.p).project(camera); const vis=tmp.z<1;
+    t.el.style.display = vis ? 'flex' : 'none';
+    t.el.style.left=((tmp.x+1)/2*w)+'px'; t.el.style.top=((1-tmp.y)/2*h)+'px'; });
+}
+window.addEventListener('resize', resize);
+setMode('bad'); place(); resize();
+})();
+</script>
+</body>
+</html>

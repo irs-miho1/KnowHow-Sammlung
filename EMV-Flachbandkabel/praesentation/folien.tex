@@ -1,0 +1,71 @@
+% Beamer-Gerüst: Flachbandkabel – gute und schlechte Praxis
+% Abbildungen liegen in fig/ (PDF, Vektor). Übersetzen mit: lualatex folien.tex
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage[ngerman]{babel}
+\usepackage{fontspec}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\graphicspath{{../abbildungen/}}
+\setbeamertemplate{navigation symbols}{}
+\title{Flachbandkabel im Metallgehäuse}
+\subtitle{Pinbelegung, Kabelführung und Chassisanbindung}
+\date{\today}
+
+\newcommand{\bildfolie}[3]{%
+\begin{frame}{#1}
+  \centering\includegraphics[width=\linewidth,height=0.72\textheight,keepaspectratio]{#2}\\[2pt]
+  \footnotesize #3
+\end{frame}}
+
+\begin{document}
+\frame{\titlepage}
+
+\begin{frame}{Kernaussagen}
+\begin{itemize}
+  \item Pinbelegung ist der größte Hebel: 1 GND $\to$ S-G-S-G senkt $V_{CM}$ um 23--27\,dB
+  \item Höhe über dem Blech ändert $h$ kaum -- wirkt über Kopplung und Rückstromweg
+  \item Flach am Blech \emph{ohne} Chassisanbindung ist schlechter (+10\,dB)
+  \item Mit Anbindung wird das Blech Rückleiter: $\Delta h$ gegen Umgebung flach $-18$\,dB
+  \item Flach gewinnt in 4 von 5 Pfaden -- Bolzenpfad nur mit $\le 1$\,nH unkritisch
+  \item Anbindung direkt am Stecker, $<1$\,nH: $-35$\,dB bei 50\,MHz
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Imbalance-Difference-Modell}
+\[ h = \frac{C_S}{C_S + C_R} \qquad V_{CM} = \Delta h \cdot V_{DM} \]
+Gleichtakt entsteht dort, wo $h$ springt: am Übergang Platine $\to$ Flachband.
+\end{frame}
+
+\bildfolie{Untersuchte Pinbelegungen}{01_pinbelegungen}{T = Takt, A = Analogsignal, G = Masse}
+\bildfolie{Feldbild bei Gegentaktanregung}{02_feldbilder}{Feld, das auf dem Blech endet, ist Gleichtakt}
+\bildfolie{Imbalance-Faktor über der Höhe}{03_h_ueber_hoehe}{Pinbelegung dominiert, Höhe kaum}
+\bildfolie{Übersprechen und Schleifeninduktivität}{04_uebersprechen_induktivitaet}{Eine GND-Ader zwischen Takt und Analog: $-20$\,dB}
+\bildfolie{Zwei Bezugssysteme für $h$}{11_h_bezug_unendlich}{Mit Anbindung: frei im Raum $\approx 8\times$ größerer Sprung}
+\begin{frame}{Welche Formel wann?}
+\begin{itemize}
+  \item Naher Rückleiter (Kabel über Blech, im Gehäuse): kleine Schleife
+  \[ E \approx 1{,}316\cdot 10^{-14}\,\frac{f^2 A I}{r},\quad A = \ell \cdot H \]
+  \item Kein naher Rückleiter (externes Kabel, Kunststoffgehäuse): Gleichtakt-Antenne
+  \[ E \approx 1{,}257\cdot 10^{-6}\,\frac{f I L}{r} \]
+  \item Verhältnis $9{,}5\cdot10^{7}/(f H)$: Gleichtaktformel für den Bogen im Gehäuse überschätzt um $\approx 24$\,dB
+\end{itemize}
+\end{frame}
+\bildfolie{Magnetische Kopplung auf Nachbarkabel}{08_magnetische_kopplung}{Am Blech: $-31$\,dB (V1)}
+\bildfolie{Zwei Aufbauten im Vergleich}{07_seitenansicht}{Rückstromweg bestimmt das Platinenpotential}
+\bildfolie{Platinenpotential gegenüber Chassis}{05_uebertragung_platinenpotential}{Anbindung entscheidet bis ca. 200\,MHz}
+\bildfolie{Feldstärke über externes Kabel}{06_feldstaerke_spektrum}{Drei Pfade, Leckfaktor 0,1}
+\bildfolie{Warum flach? Die Deckelöffnung}{10_deckeloeffnung}{Gleiche Quelle: Bogen 40\,mm $+11$\,dB, 2\,cm unter Deckel $+27$\,dB}
+\bildfolie{Pfadbilanz: flach gegenüber frei}{12_pfadbilanz}{Flach gewinnt in 4 von 5 Pfaden}
+\bildfolie{Einfluss des Gehäuses}{13_leckfaktor}{Display-Fenster, Kunststofffront: frei im Raum verliert deutlich}
+\bildfolie{Anbindung muss niederinduktiv sein}{09_anbindungsinduktivitaet}{$\le 1$\,nH: mehrere Bolzen, flächiger Kontakt}
+
+\begin{frame}{Rangfolge der Maßnahmen}
+\begin{enumerate}
+  \item Pinbelegung: S-G-S-G, Takte innen, Ränder GND
+  \item Chassisanbindung direkt am Stecker, $<1$\,nH
+  \item Flach auf Blech, $\le 3$\,mm
+  \item Kurz, Abstand zu Öffnungen und Nachbarkabeln
+  \item Ferrit als Reserve gegen Resonanzen
+\end{enumerate}
+\end{frame}
+\end{document}
